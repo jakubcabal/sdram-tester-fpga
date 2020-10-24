@@ -1,0 +1,79 @@
+#-------------------------------------------------------------------------------
+# PROJECT: SDRAM TESTER FPGA
+#-------------------------------------------------------------------------------
+# AUTHORS: Jakub Cabal <jakubcabal@gmail.com>
+# LICENSE: The MIT License, please read LICENSE file
+#-------------------------------------------------------------------------------
+
+set_global_assignment -name FAMILY "Cyclone 10 LP"
+set_global_assignment -name DEVICE 10CL025YU256C8G
+set_global_assignment -name TOP_LEVEL_ENTITY FPGA
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS REGULAR IO"
+
+# PROJECT VHDL FILES
+set_global_assignment -name VHDL_FILE ../comp/base/rst_sync.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/pll.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/fifo_mark.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/fifo.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/asfifo.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/sys_module.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/sdp_ram.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_debouncer.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_parity.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_tx.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_rx.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart.vhd
+set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart2wbm.vhd
+set_global_assignment -name VHDL_FILE ../comp/wb_splitter/wb_splitter.vhd
+set_global_assignment -name VHDL_FILE "../comp/sdram-fpga/sdram.vhd"
+set_global_assignment -name VHDL_FILE ../fpga.vhd
+
+# TIMING CONSTRAINTS
+set_global_assignment -name SDC_FILE fpga.sdc
+
+# FPGA PINS ASSIGNMENT
+set_location_assignment PIN_M2 -to CLK_12M
+set_location_assignment PIN_N6 -to RST_BTN_N
+
+set_location_assignment PIN_A3 -to SDRAM_A[0]
+set_location_assignment PIN_B5 -to SDRAM_A[1]
+set_location_assignment PIN_B4 -to SDRAM_A[2]
+set_location_assignment PIN_B3 -to SDRAM_A[3]
+set_location_assignment PIN_C3 -to SDRAM_A[4]
+set_location_assignment PIN_D3 -to SDRAM_A[5]
+set_location_assignment PIN_E6 -to SDRAM_A[6]
+set_location_assignment PIN_E7 -to SDRAM_A[7]
+set_location_assignment PIN_D6 -to SDRAM_A[8]
+set_location_assignment PIN_D8 -to SDRAM_A[9]
+set_location_assignment PIN_A5 -to SDRAM_A[10]
+set_location_assignment PIN_E8 -to SDRAM_A[11]
+set_location_assignment PIN_A4 -to SDRAM_BA[0]
+set_location_assignment PIN_B6 -to SDRAM_BA[1]
+set_location_assignment PIN_B10 -to SDRAM_DQ[0]
+set_location_assignment PIN_A10 -to SDRAM_DQ[1]
+set_location_assignment PIN_B11 -to SDRAM_DQ[2]
+set_location_assignment PIN_A11 -to SDRAM_DQ[3]
+set_location_assignment PIN_A12 -to SDRAM_DQ[4]
+set_location_assignment PIN_D9 -to SDRAM_DQ[5]
+set_location_assignment PIN_B12 -to SDRAM_DQ[6]
+set_location_assignment PIN_C9 -to SDRAM_DQ[7]
+set_location_assignment PIN_D11 -to SDRAM_DQ[8]
+set_location_assignment PIN_E11 -to SDRAM_DQ[9]
+set_location_assignment PIN_A15 -to SDRAM_DQ[10]
+set_location_assignment PIN_E9 -to SDRAM_DQ[11]
+set_location_assignment PIN_D14 -to SDRAM_DQ[12]
+set_location_assignment PIN_F9 -to SDRAM_DQ[13]
+set_location_assignment PIN_C14 -to SDRAM_DQ[14]
+set_location_assignment PIN_A14 -to SDRAM_DQ[15]
+set_location_assignment PIN_D12 -to SDRAM_DQM[1]
+set_location_assignment PIN_B13 -to SDRAM_DQM[0]
+set_location_assignment PIN_B14 -to SDRAM_CLK
+set_location_assignment PIN_A6 -to SDRAM_CS
+set_location_assignment PIN_F8 -to SDRAM_CKE
+set_location_assignment PIN_B7 -to SDRAM_RAS
+set_location_assignment PIN_C8 -to SDRAM_CAS
+set_location_assignment PIN_A7 -to SDRAM_WE
+
+set_location_assignment PIN_T7 -to UART_TXD
+set_location_assignment PIN_R7 -to UART_RXD

@@ -1,0 +1,3 @@
+[submodule "rtl/comp/sdram-fpga"]
+	path = rtl/comp/sdram-fpga
+	url = git@github.com:nullobject/sdram-fpga.git
