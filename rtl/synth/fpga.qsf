@@ -26,7 +26,8 @@ set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_rx.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart2wbm.vhd
 set_global_assignment -name VHDL_FILE ../comp/wb_splitter/wb_splitter.vhd
-set_global_assignment -name VHDL_FILE "../comp/sdram-fpga/sdram.vhd"
+set_global_assignment -name VHDL_FILE ../comp/sdram-fpga/sdram.vhd
+set_global_assignment -name VHDL_FILE ../comp/tester/tester.vhd
 set_global_assignment -name VHDL_FILE ../fpga.vhd
 
 # TIMING CONSTRAINTS
@@ -69,11 +70,11 @@ set_location_assignment PIN_A14 -to SDRAM_DQ[15]
 set_location_assignment PIN_D12 -to SDRAM_DQM[1]
 set_location_assignment PIN_B13 -to SDRAM_DQM[0]
 set_location_assignment PIN_B14 -to SDRAM_CLK
-set_location_assignment PIN_A6 -to SDRAM_CS
+set_location_assignment PIN_A6 -to SDRAM_CS_N
 set_location_assignment PIN_F8 -to SDRAM_CKE
-set_location_assignment PIN_B7 -to SDRAM_RAS
-set_location_assignment PIN_C8 -to SDRAM_CAS
-set_location_assignment PIN_A7 -to SDRAM_WE
+set_location_assignment PIN_B7 -to SDRAM_RAS_N
+set_location_assignment PIN_C8 -to SDRAM_CAS_N
+set_location_assignment PIN_A7 -to SDRAM_WE_N
 
 set_location_assignment PIN_T7 -to UART_TXD
 set_location_assignment PIN_R7 -to UART_RXD
