@@ -204,7 +204,7 @@ begin
         T_RCD            =>     15.0, -- RAS to CAS delay OK
         T_RP             =>     15.0, -- precharge to activate delay OK
         T_WR             =>     12.0, -- write recovery time OK
-        T_REFI           =>  16000.0 -- average refresh interval
+        T_REFI           =>  15625.0 -- average refresh interval
     )
     port map (
         reset       => rst_sdram,
@@ -232,5 +232,40 @@ begin
     SDRAM_A   <= std_logic_vector(sdram_a_uns);
     SDRAM_BA  <= std_logic_vector(sdram_ba_uns);
     SDRAM_CLK <= clk_sdram;
+
+    --sdram_ctrl_b_i : entity work.sdram_controller
+    --generic map (
+    --    CLK_RATE             => 166000000,
+    --    READ_BURST_LENGTH    => 2,
+    --    WRITE_BURST          => 1,
+    --    ROW_ADDRESS_WIDTH    => 12,
+    --    COLUMN_ADDRESS_WIDTH => 8,
+    --    DATA_WIDTH           => 32,
+    --    DQM_WIDTH            => 2,
+    --    CAS_LATENCY          => 3, -- 2=below 133MHz, 3=above 133MHz
+    --    ROW_CYCLE_TIME                                      => 60.0e-9,
+    --    RAS_TO_CAS_DELAY                                    => 15.0e-9,
+    --    PRECHARGE_TO_REFRESH_OR_ROW_ACTIVATE_SAME_BANK_TIME => 15.0e-9,
+    --    ROW_ACTIVATE_TO_ROW_ACTIVATE_DIFFERENT_BANK_TIME    => 12.0e-9,
+    --    ROW_ACTIVATE_TO_PRECHARGE_SAME_BANK_TIME            => 42.0e-9
+    --)
+    --port map (
+    --    clk         => clk_sdram,
+    --    command
+    --    data_address
+    --    data_write
+    --    data_write_done
+    --    data_read
+    --    data_read_valid
+--
+    --    address               => sdram_a_uns,
+    --    bank_activate         => sdram_ba_uns,
+    --    dq                    => SDRAM_DQ,
+    --    clock_enable          => SDRAM_CS_N,
+    --    row_address_strobe    => SDRAM_RAS_N,
+    --    column_address_strobe => SDRAM_CAS_N,
+    --    write_enable          => SDRAM_WE_N,
+    --    dqm                   => SDRAM_DQM
+    --);
 
 end architecture;
