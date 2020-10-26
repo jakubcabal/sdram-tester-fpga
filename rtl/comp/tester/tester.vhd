@@ -10,6 +10,10 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity SDRAM_TESTER is
+    Generic (
+        DATA_WIDTH : natural := 16;
+        ADDR_WIDTH : natural := 16 -- minimum is 16
+    );
     Port (
         -- CLOCK AND RESET
         CLK      : in  std_logic;
@@ -26,12 +30,12 @@ entity SDRAM_TESTER is
         WB_DOUT    : out std_logic_vector(31 downto 0);
 
         -- SDRAM TEST INTERFACE
-        TEST_ADDR  : out std_logic_vector(21 downto 0);
-        TEST_DWR   : out std_logic_vector(31 downto 0);
+        TEST_ADDR  : out std_logic_vector(ADDR_WIDTH-1 downto 0);
+        TEST_DWR   : out std_logic_vector(DATA_WIDTH-1 downto 0);
         TEST_WR    : out std_logic;
         TEST_VLD   : out std_logic;
         TEST_RDY   : in  std_logic;
-        TEST_DRD   : in  std_logic_vector(31 downto 0);
+        TEST_DRD   : in  std_logic_vector(DATA_WIDTH-1 downto 0);
         TEST_DRD_V : in  std_logic
     );
 end entity;
@@ -51,7 +55,7 @@ architecture RTL of SDRAM_TESTER is
     signal test_mode    : std_logic;
     signal test_ready   : std_logic;
 
-    signal addr_cnt     : unsigned(21 downto 0);
+    signal addr_cnt     : unsigned(ADDR_WIDTH-1 downto 0);
     signal tick_cnt     : unsigned(31 downto 0);
     signal tick_cnt_max : std_logic;
     signal req_cnt      : unsigned(31 downto 0);
@@ -134,7 +138,7 @@ begin
     end process;
 
     TEST_ADDR <= std_logic_vector(addr_cnt);
-    TEST_DWR  <= std_logic_vector(addr_cnt(16-1 downto 0)) & std_logic_vector(addr_cnt(16-1 downto 0));
+    TEST_DWR  <= std_logic_vector(resize(addr_cnt(16-1 downto 0),DATA_WIDTH));
     TEST_WR   <= test_mode;
     TEST_VLD  <= test_run;
 

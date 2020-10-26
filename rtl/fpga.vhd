@@ -35,6 +35,8 @@ architecture FULL of FPGA is
 
     constant WB_BASE_PORTS  : natural := 4;  -- system, test, reserved, reserved
     constant WB_BASE_OFFSET : natural := 14;
+    constant TESTER_DATA_W  : natural := 32;
+    constant TESTER_ADDR_W  : natural := 21;
 
     signal rst_btn      : std_logic;
 
@@ -43,6 +45,7 @@ architecture FULL of FPGA is
 
     signal clk_sdram    : std_logic;
     signal rst_sdram    : std_logic;
+    signal rst_sdram_n  : std_logic;
 
     signal wb_master_cyc   : std_logic;
     signal wb_master_stb   : std_logic;
@@ -62,16 +65,43 @@ architecture FULL of FPGA is
     signal wb_mbs_ack   : std_logic_vector(WB_BASE_PORTS-1 downto 0);
     signal wb_mbs_dout  : std_logic_vector(WB_BASE_PORTS*32-1 downto 0);
 
-    signal test_addr    : std_logic_vector(21 downto 0);
-    signal test_dwr     : std_logic_vector(31 downto 0);
+    signal test_addr    : std_logic_vector(TESTER_ADDR_W-1 downto 0);
+    signal test_dwr     : std_logic_vector(TESTER_DATA_W-1 downto 0);
     signal test_wr      : std_logic;
     signal test_vld     : std_logic;
     signal test_rdy     : std_logic;
-    signal test_drd     : std_logic_vector(31 downto 0);
+    signal test_drd     : std_logic_vector(TESTER_DATA_W-1 downto 0);
     signal test_drd_v   : std_logic;
+    signal test_busy    : std_logic;
 
     signal sdram_a_uns  : unsigned(12-1 downto 0);
     signal sdram_ba_uns : unsigned(2-1 downto 0);
+
+    --COMPONENT sdram_controller
+    --PORT (
+    --    wr_addr        : in  std_logic_vector(2+12+8-1 downto 0);
+    --    wr_data        : in  std_logic_vector(16-1 downto 0);
+    --    wr_enable      : in  std_logic;
+    --    rd_addr        : in  std_logic_vector(2+12+8-1 downto 0);
+    --    rd_data        : out std_logic_vector(16-1 downto 0);
+    --    rd_ready       : out std_logic;
+    --    rd_enable      : in  std_logic;
+    --    busy           : out std_logic;
+    --    rst_n          : in  std_logic;
+    --    clk            : in  std_logic;
+--
+    --    addr           : out std_logic_vector(12-1 downto 0);
+    --    bank_addr      : out std_logic_vector(2-1 downto 0);
+    --    data           : inout std_logic_vector(16-1 downto 0);
+    --    clock_enable   : out std_logic;
+    --    cs_n           : out std_logic;
+    --    ras_n          : out std_logic;
+    --    cas_n          : out std_logic;
+    --    we_n           : out std_logic;
+    --    data_mask_low  : out std_logic;
+    --    data_mask_high : out std_logic
+    --);
+    --END COMPONENT;
 
 begin
 
@@ -93,6 +123,8 @@ begin
         ASYNC_RST  => pll_locked_n,
         SYNCED_RST => rst_sdram
     );
+
+    rst_sdram_n <= not rst_sdram;
 
     uart2wbm_i : entity work.UART2WBM
     generic map (
@@ -162,6 +194,10 @@ begin
     );
 
     tester_i : entity work.SDRAM_TESTER
+    generic map (
+        DATA_WIDTH => TESTER_DATA_W,
+        ADDR_WIDTH => TESTER_ADDR_W
+    )
     port map (
         -- CLOCK AND RESET
         CLK        => clk_sdram,
@@ -189,8 +225,8 @@ begin
     sdram_ctrl_i : entity work.sdram
     generic map (
         CLK_FREQ         => 166.0,
-        ADDR_WIDTH       => 22,
-        DATA_WIDTH       => 32,
+        ADDR_WIDTH       => TESTER_ADDR_W,
+        DATA_WIDTH       => TESTER_DATA_W,
         SDRAM_ADDR_WIDTH => 12,
         SDRAM_DATA_WIDTH => 16,
         SDRAM_COL_WIDTH  => 8,
@@ -233,39 +269,33 @@ begin
     SDRAM_BA  <= std_logic_vector(sdram_ba_uns);
     SDRAM_CLK <= clk_sdram;
 
-    --sdram_ctrl_b_i : entity work.sdram_controller
-    --generic map (
-    --    CLK_RATE             => 166000000,
-    --    READ_BURST_LENGTH    => 2,
-    --    WRITE_BURST          => 1,
-    --    ROW_ADDRESS_WIDTH    => 12,
-    --    COLUMN_ADDRESS_WIDTH => 8,
-    --    DATA_WIDTH           => 32,
-    --    DQM_WIDTH            => 2,
-    --    CAS_LATENCY          => 3, -- 2=below 133MHz, 3=above 133MHz
-    --    ROW_CYCLE_TIME                                      => 60.0e-9,
-    --    RAS_TO_CAS_DELAY                                    => 15.0e-9,
-    --    PRECHARGE_TO_REFRESH_OR_ROW_ACTIVATE_SAME_BANK_TIME => 15.0e-9,
-    --    ROW_ACTIVATE_TO_ROW_ACTIVATE_DIFFERENT_BANK_TIME    => 12.0e-9,
-    --    ROW_ACTIVATE_TO_PRECHARGE_SAME_BANK_TIME            => 42.0e-9
-    --)
+    -- https://github.com/stffrdhrn/sdram-controller
+    --sdram_ctrl_b_i : sdram_controller
     --port map (
-    --    clk         => clk_sdram,
-    --    command
-    --    data_address
-    --    data_write
-    --    data_write_done
-    --    data_read
-    --    data_read_valid
+    --    wr_addr   => test_addr,
+    --    wr_data   => test_dwr,
+    --    wr_enable => test_vld and test_wr,
+    --    rd_addr   => test_addr,
+    --    rd_data   => test_drd,
+    --    rd_ready  => test_drd_v,
+    --    rd_enable => test_vld and not test_wr,
+    --    busy      => test_busy,
+    --    rst_n     => rst_sdram_n,
+    --    clk       => clk_sdram,
 --
-    --    address               => sdram_a_uns,
-    --    bank_activate         => sdram_ba_uns,
-    --    dq                    => SDRAM_DQ,
-    --    clock_enable          => SDRAM_CS_N,
-    --    row_address_strobe    => SDRAM_RAS_N,
-    --    column_address_strobe => SDRAM_CAS_N,
-    --    write_enable          => SDRAM_WE_N,
-    --    dqm                   => SDRAM_DQM
+    --    addr           => SDRAM_A,
+    --    bank_addr      => SDRAM_BA,
+    --    data           => SDRAM_DQ,
+    --    clock_enable   => SDRAM_CKE,
+    --    cs_n           => SDRAM_CS_N,
+    --    ras_n          => SDRAM_RAS_N,
+    --    cas_n          => SDRAM_CAS_N,
+    --    we_n           => SDRAM_WE_N,
+    --    data_mask_low  => SDRAM_DQM(0),
+    --    data_mask_high => SDRAM_DQM(1)
     --);
+--
+    --test_rdy <= not test_busy;
+    --SDRAM_CLK <= clk_sdram;
 
 end architecture;
