@@ -18,6 +18,7 @@ class tester:
         tick_cnt    = self.wb.read(self.ba+0x10)
         req_cnt     = self.wb.read(self.ba+0x14)
         rdresp_cnt  = self.wb.read(self.ba+0x18)
+        error_cnt   = self.wb.read(self.ba+0x1c)
 
         period = 1.0/0.166
         time = (tick_cnt*period)/1000000000
@@ -36,20 +37,30 @@ class tester:
         print("Tick cnt:            %d" % tick_cnt)
         print("Reuest cnt:          %d" % req_cnt)
         print("RD Response cnt:     %d" % rdresp_cnt)
+        print("Error cnt:           %d" % error_cnt)
         print("----------------------------------------\n")
 
-    def run_test(self,write):
+    def run_test(self,write,rand):
         print("========================================")
-        if write:
+        if (write and not rand):
             test_mode = 0x10
-            print("WRITE TEST:")
-        else:
+            print("WRITE SEQ TEST:")
+        if (write and rand):
+            test_mode = 0x30
+            print("WRITE RAND TEST:")
+        if (not write and not rand):
             test_mode = 0x00
-            print("READ TEST:")
+            print("READ SEQ TEST:")
+        if (not write and rand):
+            test_mode = 0x20
+            print("READ RAND TEST:")
         print("========================================")
         self.wb.write(self.ba+0x00,0x2) # clear test
         self.wb.write(self.ba+0x00,0x0) # clear test done
-        #self.wb.write(self.ba+0x08,0x4fffffff) # run test
+        if (write):
+            self.wb.write(self.ba+0x08,0x00ffffff)
+        else:
+            self.wb.write(self.ba+0x08,0x00efffff)
         self.wb.write(self.ba+0x00,0x1+test_mode) # run test
         print("Test Run...")
         status = self.wb.read(self.ba+0x04)

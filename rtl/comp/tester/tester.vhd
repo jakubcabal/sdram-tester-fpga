@@ -16,8 +16,8 @@ entity SDRAM_TESTER is
     );
     Port (
         -- CLOCK AND RESET
-        CLK      : in  std_logic;
-        RST      : in  std_logic;
+        CLK        : in  std_logic;
+        RST        : in  std_logic;
 
         -- WISHBONE SLAVE INTERFACE
         WB_CYC     : in  std_logic;
@@ -52,14 +52,22 @@ architecture RTL of SDRAM_TESTER is
 
     signal test_run     : std_logic;
     signal test_clr     : std_logic;
-    signal test_mode    : std_logic;
+    signal test_mode    : std_logic_vector(1 downto 0);
     signal test_ready   : std_logic;
 
     signal addr_cnt     : unsigned(ADDR_WIDTH-1 downto 0);
+    signal lsfr_rst     : std_logic;
+    signal addr_rand32  : std_logic_vector(31 downto 0);
+    signal data_rand_en : std_logic;
+    signal data_rand32  : std_logic_vector(31 downto 0);
     signal tick_cnt     : unsigned(31 downto 0);
     signal tick_cnt_max : std_logic;
     signal req_cnt      : unsigned(31 downto 0);
     signal rdresp_cnt   : unsigned(31 downto 0);
+
+    signal error_cmp    : std_logic;
+    signal error_cnt_en : std_logic;
+    signal error_cnt    : unsigned(31 downto 0);
 
 begin
 
@@ -115,6 +123,8 @@ begin
                     WB_DOUT <= std_logic_vector(req_cnt);
                 when X"0018" => -- read response counter
                     WB_DOUT <= std_logic_vector(rdresp_cnt);
+                when X"001C" => -- error counter
+                    WB_DOUT <= std_logic_vector(error_cnt);
                 when others =>
                     WB_DOUT <= X"DEADCAFE";
             end case;
@@ -123,7 +133,7 @@ begin
 
     test_run   <= ctrl_reg(0) and not tick_cnt_max;
     test_clr   <= ctrl_reg(1);
-    test_mode  <= ctrl_reg(4);
+    test_mode  <= ctrl_reg(5 downto 4);
     test_ready <= test_run and TEST_RDY;
 
     process (CLK)
@@ -137,9 +147,35 @@ begin
         end if;
     end process;
 
-    TEST_ADDR <= std_logic_vector(addr_cnt);
-    TEST_DWR  <= std_logic_vector(resize(addr_cnt(16-1 downto 0),DATA_WIDTH));
-    TEST_WR   <= test_mode;
+    lsfr_rst <= RST or test_clr;
+
+    addr_rand_i : entity work.LFSR_GEN32
+    generic map (
+        SEED => 42
+    )
+    port map (
+        CLK  => CLK,
+        RST  => lsfr_rst,
+        EN   => test_ready,
+        DOUT => addr_rand32
+    );
+
+    data_rand_en <= test_ready when (test_mode(0) = '1') else TEST_DRD_V;
+
+    data_rand_i : entity work.LFSR_GEN32
+    generic map (
+        SEED => 11
+    )
+    port map (
+        CLK  => CLK,
+        RST  => lsfr_rst,
+        EN   => data_rand_en,
+        DOUT => data_rand32
+    );
+
+    TEST_ADDR <= std_logic_vector(addr_cnt) when (test_mode(1) = '0') else addr_rand32(ADDR_WIDTH-1 downto 0);
+    TEST_DWR  <= data_rand32(DATA_WIDTH-1 downto 0);
+    TEST_WR   <= test_mode(0);
     TEST_VLD  <= test_run;
 
     process (CLK)
@@ -173,6 +209,20 @@ begin
                 rdresp_cnt <= (others => '0');
             elsif (TEST_DRD_V = '1') then
                 rdresp_cnt <= rdresp_cnt + 1;
+            end if;
+        end if;
+    end process;
+
+    error_cmp <= '0' when (TEST_DRD = data_rand32(DATA_WIDTH-1 downto 0)) else '1';
+    error_cnt_en <= TEST_DRD_V and error_cmp;
+
+    process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+            if (RST = '1' or test_clr = '1') then
+                error_cnt <= (others => '0');
+            elsif (error_cnt_en = '1') then
+                error_cnt <= error_cnt + 1;
             end if;
         end if;
     end process;
