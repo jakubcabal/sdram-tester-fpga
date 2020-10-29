@@ -1,3 +1,6 @@
 [submodule "rtl/comp/sdram-fpga"]
 	path = rtl/comp/sdram-fpga
 	url = git@github.com:jakubcabal/sdram-fpga.git
+[submodule "rtl/comp/ahb_lite_sdram"]
+	path = rtl/comp/ahb_lite_sdram
+	url = git@github.com:jakubcabal/ahb_lite_sdram.git
