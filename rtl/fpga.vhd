@@ -65,43 +65,67 @@ architecture FULL of FPGA is
     signal wb_mbs_ack   : std_logic_vector(WB_BASE_PORTS-1 downto 0);
     signal wb_mbs_dout  : std_logic_vector(WB_BASE_PORTS*32-1 downto 0);
 
-    signal test_addr    : std_logic_vector(TESTER_ADDR_W-1 downto 0);
-    signal test_dwr     : std_logic_vector(TESTER_DATA_W-1 downto 0);
-    signal test_wr      : std_logic;
-    signal test_vld     : std_logic;
-    signal test_rdy     : std_logic;
-    signal test_drd     : std_logic_vector(TESTER_DATA_W-1 downto 0);
-    signal test_drd_v   : std_logic;
-    signal test_busy    : std_logic;
+    signal test_addr        : std_logic_vector(TESTER_ADDR_W-1 downto 0);
+    signal test_addr_ext    : std_logic_vector(TESTER_ADDR_W+2-1 downto 0);
+    signal test_dwr         : std_logic_vector(TESTER_DATA_W-1 downto 0);
+    signal test_wr          : std_logic;
+    signal test_vld         : std_logic;
+    signal test_rdy         : std_logic;
+    signal test_drd         : std_logic_vector(TESTER_DATA_W-1 downto 0);
+    signal test_drd_v       : std_logic;
+    signal test_read        : std_logic;
+    signal test_drd_v_shreg : std_logic_vector(7-1 downto 0);
 
     signal sdram_a_uns  : unsigned(12-1 downto 0);
     signal sdram_ba_uns : unsigned(2-1 downto 0);
 
-    --COMPONENT sdram_controller
-    --PORT (
-    --    wr_addr        : in  std_logic_vector(2+12+8-1 downto 0);
-    --    wr_data        : in  std_logic_vector(16-1 downto 0);
-    --    wr_enable      : in  std_logic;
-    --    rd_addr        : in  std_logic_vector(2+12+8-1 downto 0);
-    --    rd_data        : out std_logic_vector(16-1 downto 0);
-    --    rd_ready       : out std_logic;
-    --    rd_enable      : in  std_logic;
-    --    busy           : out std_logic;
-    --    rst_n          : in  std_logic;
-    --    clk            : in  std_logic;
---
-    --    addr           : out std_logic_vector(12-1 downto 0);
-    --    bank_addr      : out std_logic_vector(2-1 downto 0);
-    --    data           : inout std_logic_vector(16-1 downto 0);
-    --    clock_enable   : out std_logic;
-    --    cs_n           : out std_logic;
-    --    ras_n          : out std_logic;
-    --    cas_n          : out std_logic;
-    --    we_n           : out std_logic;
-    --    data_mask_low  : out std_logic;
-    --    data_mask_high : out std_logic
-    --);
-    --END COMPONENT;
+    COMPONENT ahb_lite_sdram
+    generic (
+        ADDR_BITS          : natural;
+        ROW_BITS           : natural;
+        COL_BITS           : natural;
+        DQ_BITS            : natural;
+        DM_BITS            : natural;
+        BA_BITS            : natural;
+        DELAY_nCKE         : natural;
+        DELAY_tREF         : natural;
+        DELAY_tRP          : natural;
+        DELAY_tRFC         : natural;
+        DELAY_tMRD         : natural;
+        DELAY_tRCD         : natural;
+        DELAY_tCAS         : natural;
+        DELAY_afterREAD    : natural;
+        DELAY_afterWRITE   : natural;
+        COUNT_initAutoRef  : natural
+    );
+    PORT (
+        HCLK      : in  std_logic;
+        HRESETn   : in  std_logic;
+        HADDR     : in  std_logic_vector(31 downto 0);
+        HBURST    : in  std_logic_vector(2 downto 0);
+        HMASTLOCK : in  std_logic;
+        HPROT     : in  std_logic_vector(3 downto 0);
+        HSEL      : in  std_logic;
+        HSIZE     : in  std_logic_vector(2 downto 0);
+        HTRANS    : in  std_logic_vector(1 downto 0);
+        HWDATA    : in  std_logic_vector(31 downto 0);
+        HWRITE    : in  std_logic;
+        HREADY    : in  std_logic;
+        HRDATA    : out std_logic_vector(31 downto 0);
+        HREADYOUT : out std_logic;
+        HRESP     : out std_logic;
+        SI_Endian : in  std_logic;
+        CKE       : out std_logic;
+        CSn       : out std_logic;
+        RASn      : out std_logic;
+        CASn      : out std_logic;
+        WEn       : out std_logic;
+        ADDR      : out std_logic_vector(ADDR_BITS-1 downto 0);
+        BA        : out std_logic_vector(BA_BITS-1 downto 0);
+        DQ        : inout std_logic_vector(DQ_BITS-1 downto 0);
+        DQM       : out std_logic_vector(DM_BITS-1 downto 0)
+    );
+    END COMPONENT;
 
 begin
 
@@ -109,10 +133,11 @@ begin
 
     pll_i : entity work.PLL
     port map (
-        IN_CLK_12M     => CLK_12M,
+        IN_CLK         => CLK_12M,
         IN_RST_BTN     => rst_btn,
         OUT_PLL_LOCKED => pll_locked,
-        OUT_CLK_166M   => clk_sdram
+        OUT_CLK0       => clk_sdram,
+        OUT_CLK1       => SDRAM_CLK
     );
 
     pll_locked_n <= not pll_locked;
@@ -128,7 +153,7 @@ begin
 
     uart2wbm_i : entity work.UART2WBM
     generic map (
-        CLK_FREQ  => 166e6,
+        CLK_FREQ  => 50e6,
         BAUD_RATE => 9600
     )
     port map (
@@ -222,80 +247,113 @@ begin
         TEST_DRD_V => test_drd_v
     );
 
-    sdram_ctrl_i : entity work.sdram
-    generic map (
-        CLK_FREQ         => 166.0,
-        ADDR_WIDTH       => TESTER_ADDR_W,
-        DATA_WIDTH       => TESTER_DATA_W,
-        SDRAM_ADDR_WIDTH => 12,
-        SDRAM_DATA_WIDTH => 16,
-        SDRAM_COL_WIDTH  => 8,
-        SDRAM_ROW_WIDTH  => 12,
-        SDRAM_BANK_WIDTH => 2,
-        CAS_LATENCY      => 3, -- 2=below 133MHz, 3=above 133MHz
-        BURST_LENGTH     => 2,
-        T_DESL           => 200000.0, -- startup delay
-        T_MRD            =>     12.0, -- mode register cycle time OK
-        T_RC             =>     60.0, -- row cycle time OK
-        T_RCD            =>     15.0, -- RAS to CAS delay OK
-        T_RP             =>     15.0, -- precharge to activate delay OK
-        T_WR             =>     12.0, -- write recovery time OK
-        T_REFI           =>  15625.0 -- average refresh interval
-    )
-    port map (
-        reset       => rst_sdram,
-        clk         => clk_sdram,
-        addr        => unsigned(test_addr),
-        data        => test_dwr,
-        we          => test_wr,
-        req         => test_vld,
-        ack         => test_rdy,
-        valid       => test_drd_v,
-        q           => test_drd,
-
-        sdram_a     => sdram_a_uns,
-        sdram_ba    => sdram_ba_uns,
-        sdram_dq    => SDRAM_DQ,
-        sdram_cke   => SDRAM_CKE,
-        sdram_cs_n  => SDRAM_CS_N,
-        sdram_ras_n => SDRAM_RAS_N,
-        sdram_cas_n => SDRAM_CAS_N,
-        sdram_we_n  => SDRAM_WE_N,
-        sdram_dqml  => SDRAM_DQM(0),
-        sdram_dqmh  => SDRAM_DQM(1)
-    );
-
-    SDRAM_A   <= std_logic_vector(sdram_a_uns);
-    SDRAM_BA  <= std_logic_vector(sdram_ba_uns);
-    SDRAM_CLK <= clk_sdram;
-
-    -- https://github.com/stffrdhrn/sdram-controller
-    --sdram_ctrl_b_i : sdram_controller
+    --sdram_ctrl_i : entity work.sdram
+    --generic map (
+    --    CLK_FREQ         => 50.0,
+    --    ADDR_WIDTH       => TESTER_ADDR_W,
+    --    DATA_WIDTH       => TESTER_DATA_W,
+    --    SDRAM_ADDR_WIDTH => 12,
+    --    SDRAM_DATA_WIDTH => 16,
+    --    SDRAM_COL_WIDTH  => 8,
+    --    SDRAM_ROW_WIDTH  => 12,
+    --    SDRAM_BANK_WIDTH => 2,
+    --    CAS_LATENCY      => 2, -- 2=below 133MHz, 3=above 133MHz
+    --    BURST_LENGTH     => 2,
+    --    T_DESL           => 200000.0, -- startup delay
+    --    T_MRD            =>     40.0, -- mode register cycle time OK
+    --    T_RC             =>     60.0, -- row cycle time OK
+    --    T_RCD            =>     15.0, -- RAS to CAS delay OK
+    --    T_RP             =>     15.0, -- precharge to activate delay OK
+    --    T_WR             =>     40.0, -- write recovery time OK
+    --    T_REFI           =>  15625.0 -- average refresh interval
+    --)
     --port map (
-    --    wr_addr   => test_addr,
-    --    wr_data   => test_dwr,
-    --    wr_enable => test_vld and test_wr,
-    --    rd_addr   => test_addr,
-    --    rd_data   => test_drd,
-    --    rd_ready  => test_drd_v,
-    --    rd_enable => test_vld and not test_wr,
-    --    busy      => test_busy,
-    --    rst_n     => rst_sdram_n,
-    --    clk       => clk_sdram,
+    --    reset       => rst_sdram,
+    --    clk         => clk_sdram,
+    --    addr        => unsigned(test_addr),
+    --    data        => test_dwr,
+    --    we          => test_wr,
+    --    req         => test_vld,
+    --    ack         => test_rdy,
+    --    valid       => test_drd_v,
+    --    q           => test_drd,
 --
-    --    addr           => SDRAM_A,
-    --    bank_addr      => SDRAM_BA,
-    --    data           => SDRAM_DQ,
-    --    clock_enable   => SDRAM_CKE,
-    --    cs_n           => SDRAM_CS_N,
-    --    ras_n          => SDRAM_RAS_N,
-    --    cas_n          => SDRAM_CAS_N,
-    --    we_n           => SDRAM_WE_N,
-    --    data_mask_low  => SDRAM_DQM(0),
-    --    data_mask_high => SDRAM_DQM(1)
+    --    sdram_a     => sdram_a_uns,
+    --    sdram_ba    => sdram_ba_uns,
+    --    sdram_dq    => SDRAM_DQ,
+    --    sdram_cke   => SDRAM_CKE,
+    --    sdram_cs_n  => SDRAM_CS_N,
+    --    sdram_ras_n => SDRAM_RAS_N,
+    --    sdram_cas_n => SDRAM_CAS_N,
+    --    sdram_we_n  => SDRAM_WE_N,
+    --    sdram_dqml  => SDRAM_DQM(0),
+    --    sdram_dqmh  => SDRAM_DQM(1)
     --);
 --
-    --test_rdy <= not test_busy;
-    --SDRAM_CLK <= clk_sdram;
+    --SDRAM_A   <= std_logic_vector(sdram_a_uns);
+    --SDRAM_BA  <= std_logic_vector(sdram_ba_uns);
+
+    test_addr_ext <= test_addr & "00";
+
+    sdram_ctrl_i : ahb_lite_sdram
+    generic map (
+        ADDR_BITS           => 12,
+        ROW_BITS            => 12,
+        COL_BITS            => 8,
+        DQ_BITS             => 16,
+        DM_BITS             => 2,
+        BA_BITS             => 2,
+        DELAY_nCKE          => 10000,
+        DELAY_tREF          => 700,
+        DELAY_tRP           => 1,
+        DELAY_tRFC          => 4,
+        DELAY_tMRD          => 2,
+        DELAY_tRCD          => 1,
+        DELAY_tCAS          => 1,
+        DELAY_afterREAD     => 3,
+        DELAY_afterWRITE    => 3,
+        COUNT_initAutoRef   => 8 
+    )
+    port map (
+        HCLK      => clk_sdram,
+        HRESETn   => rst_sdram_n,
+        HADDR     => std_logic_vector(resize(unsigned(test_addr_ext),32)),
+        HBURST    => (others => '0'),
+        HMASTLOCK => '0',
+        HPROT     => (others => '0'),
+        HSEL      => '1',
+        HSIZE     => "010",
+        HTRANS    => "10",
+        HWDATA    => test_dwr,
+        HWRITE    => test_wr,
+        HREADY    => test_vld,
+        HRDATA    => test_drd,
+        HREADYOUT => test_rdy,
+        HRESP     => open,
+        SI_Endian => '0',
+        CKE       => SDRAM_CKE,
+        CSn       => SDRAM_CS_N,
+        RASn      => SDRAM_RAS_N,
+        CASn      => SDRAM_CAS_N,
+        WEn       => SDRAM_WE_N,
+        ADDR      => SDRAM_A,
+        BA        => SDRAM_BA,
+        DQ        => SDRAM_DQ,
+        DQM       => SDRAM_DQM
+    );
+
+    test_read <= test_vld and test_rdy and not test_wr;
+
+    process (clk_sdram)
+    begin
+        if (rising_edge(clk_sdram)) then
+            test_drd_v_shreg <= test_drd_v_shreg(5 downto 0) & test_read;
+            if (rst_sdram = '1') then
+                test_drd_v_shreg <= (others => '0');
+            end if;
+        end if;
+    end process;
+
+    test_drd_v <= test_drd_v_shreg(6);
 
 end architecture;

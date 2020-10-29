@@ -19,6 +19,7 @@ set_global_assignment -name VHDL_FILE ../comp/base/fifo.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/asfifo.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/sys_module.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/sdp_ram.vhd
+set_global_assignment -name VHDL_FILE ../comp/base/lfsr_gen32.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_debouncer.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_parity.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_tx.vhd
@@ -27,6 +28,7 @@ set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart2wbm.vhd
 set_global_assignment -name VHDL_FILE ../comp/wb_splitter/wb_splitter.vhd
 set_global_assignment -name VHDL_FILE ../comp/sdram-fpga/sdram.vhd
+set_global_assignment -name VERILOG_FILE ../comp/ahb_lite_sdram/src/ahb_lite_sdram/ahb_lite_sdram.v
 set_global_assignment -name VHDL_FILE ../comp/tester/tester.vhd
 set_global_assignment -name VHDL_FILE ../fpga.vhd
 

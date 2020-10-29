@@ -6,3 +6,4 @@ WORK IN PROGRESS
 The project is using the following open-source codes:
 
 - https://github.com/nullobject/sdram-fpga
+- https://github.com/zhelnio/ahb_lite_sdram
