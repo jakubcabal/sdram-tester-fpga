@@ -27,7 +27,9 @@ entity FPGA is
         SDRAM_WE_N  : out   std_logic;
         -- UART interface
         UART_RXD    : in    std_logic;
-        UART_TXD    : out   std_logic
+        UART_TXD    : out   std_logic;
+        -- LED output
+        LED_OUT     : out   std_logic_vector(8-1 downto 0)
     );
 end entity;
 
@@ -74,6 +76,7 @@ architecture FULL of FPGA is
     signal test_rdy         : std_logic;
     signal test_drd         : std_logic_vector(TESTER_DATA_W-1 downto 0);
     signal test_drd_v       : std_logic;
+    signal test_en          : std_logic;
     signal test_read        : std_logic;
     signal test_drd_v_shreg : std_logic_vector(8-1 downto 0);
 
@@ -151,6 +154,21 @@ begin
     );
 
     rst_sdram_n <= not rst_sdram;
+
+    led_ctrl_i : entity work.LED_CTRL
+    generic map (
+        CLK_FREQ  => 100e6,
+        LEDS      => 2
+    )
+    port map (
+        CLK          => clk_sdram,
+        RST          => rst_sdram,
+        LED_BLINK(0) => test_en,
+        LED_BLINK(1) => test_drd_v,
+        LED_OUT      => LED_OUT(2-1 downto 0)
+    );
+
+    LED_OUT(8-1 downto 2) <= (others => '0');
 
     uart2wbm_i : entity work.UART2WBM
     generic map (
@@ -247,6 +265,8 @@ begin
         TEST_DRD   => test_drd,
         TEST_DRD_V => test_drd_v
     );
+
+    test_en <= test_vld and test_rdy;
 
     sdram_ctrl0_g: if SDRAM_CTRL_SEL=0 generate
         sdram_ctrl_i : entity work.sdram
