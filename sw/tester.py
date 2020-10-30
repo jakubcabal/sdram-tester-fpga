@@ -20,7 +20,7 @@ class tester:
         rdresp_cnt  = self.wb.read(self.ba+0x18)
         error_cnt   = self.wb.read(self.ba+0x1c)
 
-        period = 1.0/0.050
+        period = 1.0/0.100
         time = (tick_cnt*period)/1000000000
         bits = req_cnt*32
         thr = (bits/time)/1000000
