@@ -16,6 +16,8 @@ To clone the repository, run:
 git clone --recursive git@github.com:jakubcabal/sdram-tester-fpga.git
 ```
 
+A short demonstration video can be found on YouTube [here](https://youtu.be/MPvkX8nlrTE).
+
 ## FPGA design
 
 ### Parameters (Top level generics)
