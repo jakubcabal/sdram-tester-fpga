@@ -28,10 +28,10 @@ class tester:
         print("========================================")
         print("TESTER STATS:")
         print("========================================")
-        print("Troughput:           %f Mbps" % thr)
+        print("Throughput:          %.2f Mbps" % thr)
         print("Total bits:          %d b" % bits)
-        print("Total time:          %f s" % time)
-        print("One period:          %f ns" % period)
+        print("Total time:          %.2f s" % time)
+        print("One period:          %.2f ns" % period)
         print("----------------------------------------")
         print("Length reg:          %d" % len_reg)
         print("Tick cnt:            %d" % tick_cnt)
@@ -77,4 +77,17 @@ class tester:
 
         self.wb.write(self.ba+0x00,0x0) # stop test
         print("Test completed.")
+
+        tick_cnt   = self.wb.read(self.ba+0x10)
+        req_cnt    = self.wb.read(self.ba+0x14)
+        error_cnt  = self.wb.read(self.ba+0x1c)
+
+        period = 1.0/0.100
+        test_time = (tick_cnt*period)/1000000000
+        bits = req_cnt*32
+        thr = (bits/test_time)/1000000
+        print("Test Throughput: %.2f Mbps" % thr)
+        if (error_cnt > 0):
+                print("Read data check failed.")
+
         print("----------------------------------------\n")

@@ -10,6 +10,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity FPGA is
+    Generic(
+        SDRAM_CTRL_SEL : natural := 0
+    );
     Port (
         -- System clock and reset button
         CLK_12M     : in    std_logic;
@@ -35,7 +38,6 @@ end entity;
 
 architecture FULL of FPGA is
 
-    constant SDRAM_CTRL_SEL : natural := 0;
     constant WB_BASE_PORTS  : natural := 4;  -- system, test, reserved, reserved
     constant WB_BASE_OFFSET : natural := 14;
     constant TESTER_DATA_W  : natural := 32;

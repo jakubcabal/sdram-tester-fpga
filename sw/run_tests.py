@@ -10,7 +10,7 @@ from wishbone import wishbone
 from tester import tester
 from sys_module import sys_module
 
-print("SUMMARY REPORTS OF SDRAM TESTER FPGA:")
+print("SDRAM TESTER FPGA:")
 print("========================================")
 
 wb = wishbone("COM4")
@@ -19,12 +19,12 @@ test = tester(wb,0x4000)
 
 #sm.report()
 test.run_test(True,False)
-test.show_stats()
+#test.show_stats()
 test.run_test(False,False)
-test.show_stats()
+#test.show_stats()
 test.run_test(True,True)
-test.show_stats()
+#test.show_stats()
 test.run_test(False,True)
-test.show_stats()
+#test.show_stats()
 
 wb.close()
