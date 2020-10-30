@@ -42,32 +42,33 @@ end entity;
 
 architecture RTL of SDRAM_TESTER is
 
-    signal ctrl_reg_sel : std_logic;
-    signal ctrl_reg_we  : std_logic;
-    signal ctrl_reg     : std_logic_vector(31 downto 0);
+    signal ctrl_reg_sel  : std_logic;
+    signal ctrl_reg_we   : std_logic;
+    signal ctrl_reg      : std_logic_vector(31 downto 0);
 
-    signal len_reg_sel  : std_logic;
-    signal len_reg_we   : std_logic;
-    signal len_reg      : std_logic_vector(31 downto 0);
+    signal len_reg_sel   : std_logic;
+    signal len_reg_we    : std_logic;
+    signal len_reg       : std_logic_vector(31 downto 0);
 
-    signal test_run     : std_logic;
-    signal test_clr     : std_logic;
-    signal test_mode    : std_logic_vector(1 downto 0);
-    signal test_ready   : std_logic;
+    signal test_run      : std_logic;
+    signal test_clr      : std_logic;
+    signal test_mode     : std_logic_vector(1 downto 0);
+    signal test_ready    : std_logic;
 
-    signal addr_cnt     : unsigned(ADDR_WIDTH-1 downto 0);
-    signal lsfr_rst     : std_logic;
-    signal addr_rand32  : std_logic_vector(31 downto 0);
-    signal data_rand_en : std_logic;
-    signal data_rand32  : std_logic_vector(31 downto 0);
-    signal tick_cnt     : unsigned(31 downto 0);
-    signal tick_cnt_max : std_logic;
-    signal req_cnt      : unsigned(31 downto 0);
-    signal rdresp_cnt   : unsigned(31 downto 0);
+    signal addr_cnt      : unsigned(ADDR_WIDTH-1 downto 0);
+    signal lsfr_rst      : std_logic;
+    signal addr_rand32   : std_logic_vector(31 downto 0);
+    signal addr_uns      : unsigned(ADDR_WIDTH-1 downto 0);
+    signal data_rand     : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal data_rand_old : std_logic_vector(DATA_WIDTH-1 downto 0);
+    signal tick_cnt      : unsigned(31 downto 0);
+    signal tick_cnt_max  : std_logic;
+    signal req_cnt       : unsigned(31 downto 0);
+    signal rdresp_cnt    : unsigned(31 downto 0);
 
-    signal error_cmp    : std_logic;
-    signal error_cnt_en : std_logic;
-    signal error_cnt    : unsigned(31 downto 0);
+    signal error_cmp     : std_logic;
+    signal error_cnt_en  : std_logic;
+    signal error_cnt     : unsigned(31 downto 0);
 
 begin
 
@@ -160,21 +161,20 @@ begin
         DOUT => addr_rand32
     );
 
-    data_rand_en <= test_ready when (test_mode(0) = '1') else TEST_DRD_V;
+    addr_uns <= addr_cnt when (test_mode(1) = '0') else unsigned(addr_rand32(ADDR_WIDTH-1 downto 0));
+    data_rand <= std_logic_vector(resize(addr_uns,DATA_WIDTH)+42);
 
-    data_rand_i : entity work.LFSR_GEN32
-    generic map (
-        SEED => 11
-    )
-    port map (
-        CLK  => CLK,
-        RST  => lsfr_rst,
-        EN   => data_rand_en,
-        DOUT => data_rand32
-    );
+    process (CLK)
+    begin
+        if (rising_edge(CLK)) then
+            if (test_ready = '1') then
+                data_rand_old <= data_rand;
+            end if;
+        end if;
+    end process;
 
-    TEST_ADDR <= std_logic_vector(addr_cnt) when (test_mode(1) = '0') else addr_rand32(ADDR_WIDTH-1 downto 0);
-    TEST_DWR  <= data_rand32(DATA_WIDTH-1 downto 0);
+    TEST_ADDR <= std_logic_vector(addr_uns);
+    TEST_DWR  <= data_rand;
     TEST_WR   <= test_mode(0);
     TEST_VLD  <= test_run;
 
@@ -213,7 +213,7 @@ begin
         end if;
     end process;
 
-    error_cmp <= '0' when (TEST_DRD = data_rand32(DATA_WIDTH-1 downto 0)) else '1';
+    error_cmp <= '0' when (TEST_DRD = data_rand_old) else '1';
     error_cnt_en <= TEST_DRD_V and error_cmp;
 
     process (CLK)

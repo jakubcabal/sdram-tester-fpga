@@ -58,9 +58,9 @@ class tester:
         self.wb.write(self.ba+0x00,0x2) # clear test
         self.wb.write(self.ba+0x00,0x0) # clear test done
         if (write):
-            self.wb.write(self.ba+0x08,0x00ffffff)
+            self.wb.write(self.ba+0x08,0x04ffffff)
         else:
-            self.wb.write(self.ba+0x08,0x00efffff)
+            self.wb.write(self.ba+0x08,0x03ffffff)
         self.wb.write(self.ba+0x00,0x1+test_mode) # run test
         print("Test Run...")
         status = self.wb.read(self.ba+0x04)
