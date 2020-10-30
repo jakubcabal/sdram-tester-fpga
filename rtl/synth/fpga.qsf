@@ -14,11 +14,7 @@ set_global_assignment -name CYCLONEII_RESERVE_NCEO_AFTER_CONFIGURATION "USE AS R
 # PROJECT VHDL FILES
 set_global_assignment -name VHDL_FILE ../comp/base/rst_sync.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/pll.vhd
-set_global_assignment -name VHDL_FILE ../comp/base/fifo_mark.vhd
-set_global_assignment -name VHDL_FILE ../comp/base/fifo.vhd
-set_global_assignment -name VHDL_FILE ../comp/base/asfifo.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/sys_module.vhd
-set_global_assignment -name VHDL_FILE ../comp/base/sdp_ram.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/lfsr_gen32.vhd
 set_global_assignment -name VHDL_FILE ../comp/base/led_ctrl.vhd
 set_global_assignment -name VHDL_FILE ../comp/uart2wbm/uart_debouncer.vhd
