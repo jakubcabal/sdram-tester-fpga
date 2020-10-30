@@ -55,7 +55,7 @@ PORT --->| MASTER  |
 * SDRAM TESTER - Read and write request generator for SDRAM controller, checking read data.
 * SDRAM CTRL - Selected SDRAM controller.
 
-### Resource usage:
+### Resource usage of the whole design:
 
 SDRAM_CTRL_SEL | LE | FF | BRAM (M9k) | Fmax
 :---:|:---:|:---:|:---:|:---:
