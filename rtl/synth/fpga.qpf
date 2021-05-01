@@ -5,4 +5,4 @@
 # LICENSE: The MIT License, please read LICENSE file
 #-------------------------------------------------------------------------------
 
-PROJECT_REVISION = "FPGA"
+PROJECT_REVISION = "fpga"
